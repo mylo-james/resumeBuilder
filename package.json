@@ -41,5 +41,13 @@
     "jest-environment-jsdom": "^30.0.5",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "eslint --fix"
+    ],
+    "*.md": [
+      "markdownlint --fix"
+    ]
   }
 }
