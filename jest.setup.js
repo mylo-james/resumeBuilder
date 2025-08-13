@@ -1,5 +1,5 @@
 // Learn more: https://github.com/testing-library/jest-dom
-import '@testing-library/jest-dom'
+import '@testing-library/jest-dom';
 
 // Mock Next.js router
 jest.mock('next/router', () => ({
@@ -21,9 +21,9 @@ jest.mock('next/router', () => ({
         emit: jest.fn(),
       },
       isFallback: false,
-    }
+    };
   },
-}))
+}));
 
 // Mock Next.js navigation
 jest.mock('next/navigation', () => ({
@@ -35,12 +35,12 @@ jest.mock('next/navigation', () => ({
       back: jest.fn(),
       forward: jest.fn(),
       refresh: jest.fn(),
-    }
+    };
   },
   useSearchParams() {
-    return new URLSearchParams()
+    return new URLSearchParams();
   },
   usePathname() {
-    return '/'
+    return '/';
   },
-}))
+}));

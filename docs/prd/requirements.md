@@ -3,12 +3,10 @@
 ## Functional Requirements
 
 1. **Job Description Input**
-
    - The user can input a job description as a plain text string.
    - The user can input a URL to a job description.
 
 2. **Content Processing**
-
    - The application can scrape or download the content from the provided URL.
    - The application sends the job description content to an OpenAI API assistant.
    - The application receives a JSON response from the API containing content for a resume and cover letter.
@@ -21,7 +19,6 @@
 ## Non-Functional Requirements
 
 1. **Technology Stack**
-
    - The application will be developed using JavaScript.
    - The application will be a local-only project with no deployment initially.
 

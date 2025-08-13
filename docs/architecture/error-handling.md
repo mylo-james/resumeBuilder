@@ -83,9 +83,7 @@ const retryWithBackoff = async (fn, maxRetries = 3) => {
       return await fn();
     } catch (error) {
       if (i === maxRetries - 1) throw error;
-      await new Promise((resolve) =>
-        setTimeout(resolve, Math.pow(2, i) * 1000)
-      );
+      await new Promise(resolve => setTimeout(resolve, Math.pow(2, i) * 1000));
     }
   }
 };

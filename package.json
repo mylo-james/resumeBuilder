@@ -15,7 +15,9 @@
     "test:coverage": "jest --coverage",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "next": "15.4.6",
@@ -39,12 +41,17 @@
     "eslint-config-next": "15.4.6",
     "jest": "^30.0.5",
     "jest-environment-jsdom": "^30.0.5",
+    "prettier": "^3.6.2",
     "tailwindcss": "^4",
     "typescript": "^5"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [
-      "eslint --fix"
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "prettier --write"
     ],
     "*.md": [
       "markdownlint --fix"
