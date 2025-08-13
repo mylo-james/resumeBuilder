@@ -32,6 +32,7 @@ export default function InputForm({ onGenerate, isLoading = false }: InputFormPr
             <Label htmlFor="job-description">Job Description</Label>
             <Textarea
               id="job-description"
+              data-testid="job-description"
               placeholder="Paste the job description here..."
               value={jobDescription}
               onChange={(e) => setJobDescription(e.target.value)}
@@ -44,6 +45,7 @@ export default function InputForm({ onGenerate, isLoading = false }: InputFormPr
             <Label htmlFor="job-url">Job URL (Optional)</Label>
             <Input
               id="job-url"
+              data-testid="job-url"
               type="url"
               placeholder="https://example.com/job-posting"
               value={jobUrl}
@@ -53,6 +55,7 @@ export default function InputForm({ onGenerate, isLoading = false }: InputFormPr
           
           <Button 
             type="submit" 
+            data-testid="generate-button"
             className="w-full" 
             disabled={isLoading || !jobDescription.trim()}
           >

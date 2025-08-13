@@ -121,6 +121,6 @@ test.describe('Basic UI with Mock Data', () => {
   });
 
   test('should display footer with demo message', async ({ page }) => {
-    await expect(page.getByText('This is a demo using mock data. AI integration coming soon!')).toBeVisible();
+    await expect(page.getByText('This is a demo using static data from the backend API. AI integration coming soon!')).toBeVisible();
   });
 });
