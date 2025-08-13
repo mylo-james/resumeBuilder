@@ -1,0 +1,10 @@
+.bmad-core/
+node_modules/
+web-bundles/
+playwright-report/
+coverage/
+**/coverage/
+**/dist/
+**/.next/
+**/build/
+**/test-results/

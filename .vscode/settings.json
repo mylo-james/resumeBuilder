@@ -1,0 +1,25 @@
+{
+  "files.associations": {
+    ".markdownlintignore": "plaintext"
+  }
+}
+
+{
+  "jest.jestCommandLine": "npx jest",
+  "jest.autoRun": {
+    "watch": false,
+    "onSave": "test-file"
+  },
+  "jest.testExplorer": {
+    "enabled": true
+  },
+  "jest.workingDirectory": ".",
+  "jest.rootPath": ".",
+  "typescript.preferences.includePackageJsonAutoImports": "auto",
+  "typescript.suggest.autoImports": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+  "eslint.workingDirectories": ["apps/web", "apps/api", "packages/shared-types"],
+  "markdownlint.ignore": [".bmad-core/**"]
+}
