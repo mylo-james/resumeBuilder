@@ -1,9 +1,46 @@
+'use client';
+
 import Image from 'next/image';
+import { useState, useEffect } from 'react';
+import { checkHealth, HealthStatus } from '@/utils/health';
 
 export default function Home() {
+  const [healthStatus, setHealthStatus] = useState<HealthStatus | null>(null);
+  const [healthError, setHealthError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const performHealthCheck = async () => {
+      try {
+        setIsLoading(true);
+        setHealthError(null);
+        const status = await checkHealth();
+        setHealthStatus(status);
+      } catch (error) {
+        setHealthError(error instanceof Error ? error.message : 'Unknown error');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    performHealthCheck();
+  }, []);
   return (
     <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
       <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
+        {/* Health Status Indicator */}
+        <div className="flex items-center gap-2 text-sm">
+          <span className="font-medium">Backend Status:</span>
+          {isLoading ? (
+            <span className="text-yellow-600">Checking...</span>
+          ) : healthError ? (
+            <span className="text-red-600">Error: {healthError}</span>
+          ) : healthStatus ? (
+            <span className="text-green-600">✓ {healthStatus.status}</span>
+          ) : (
+            <span className="text-gray-600">Unknown</span>
+          )}
+        </div>
         <Image
           className="dark:invert"
           src="/next.svg"
