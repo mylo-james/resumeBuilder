@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{personalInfo.name}} - Cover Letter</title>
+    <style>
+        body {
+            font-family: 'Times New Roman', serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px;
+            background-color: #fff;
+        }
+        .header {
+            margin-bottom: 30px;
+        }
+        .sender-info {
+            margin-bottom: 20px;
+        }
+        .sender-name {
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+        .sender-details {
+            font-size: 0.9em;
+            color: #555;
+        }
+        .date {
+            margin-bottom: 20px;
+            font-size: 0.9em;
+        }
+        .recipient-info {
+            margin-bottom: 30px;
+        }
+        .recipient-name {
+            font-weight: bold;
+        }
+        .recipient-title {
+            font-style: italic;
+        }
+        .recipient-company {
+            font-weight: bold;
+        }
+        .recipient-address {
+            font-size: 0.9em;
+            color: #555;
+        }
+        .salutation {
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        .body {
+            margin-bottom: 30px;
+        }
+        .body p {
+            margin-bottom: 15px;
+            text-align: justify;
+        }
+        .closing {
+            margin-bottom: 40px;
+        }
+        .signature {
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+        @media print {
+            body {
+                padding: 20px;
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="sender-info">
+            <div class="sender-name">{{personalInfo.name}}</div>
+            <div class="sender-details">
+                {{personalInfo.email}}<br>
+                {{personalInfo.phone}}<br>
+                {{personalInfo.address}}
+            </div>
+        </div>
+        
+        <div class="date">{{date}}</div>
+        
+        <div class="recipient-info">
+            <div class="recipient-name">{{recipient.name}}</div>
+            <div class="recipient-title">{{recipient.title}}</div>
+            <div class="recipient-company">{{recipient.company}}</div>
+            <div class="recipient-address">{{recipient.address}}</div>
+        </div>
+    </div>
+
+    <div class="salutation">{{salutation}}</div>
+
+    <div class="body">
+        {{#each body}}
+        <p>{{this}}</p>
+        {{/each}}
+    </div>
+
+    <div class="closing">
+        <div>{{closing}}</div>
+        <div class="signature">{{signature}}</div>
+    </div>
+</body>
+</html>

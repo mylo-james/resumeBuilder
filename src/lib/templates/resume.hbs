@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{personalInfo.name}} - Resume</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fff;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #2c3e50;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .name {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        .contact-info {
+            font-size: 1.1em;
+            color: #555;
+        }
+        .contact-info a {
+            color: #3498db;
+            text-decoration: none;
+        }
+        .section {
+            margin-bottom: 30px;
+        }
+        .section-title {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #2c3e50;
+            border-bottom: 1px solid #bdc3c7;
+            padding-bottom: 5px;
+            margin-bottom: 15px;
+        }
+        .summary {
+            font-size: 1.1em;
+            line-height: 1.8;
+            color: #555;
+        }
+        .experience-item, .education-item {
+            margin-bottom: 20px;
+        }
+        .job-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .company {
+            font-size: 1.1em;
+            color: #3498db;
+            font-weight: 500;
+        }
+        .date-location {
+            font-size: 0.9em;
+            color: #7f8c8d;
+            font-style: italic;
+        }
+        .description {
+            margin-top: 10px;
+        }
+        .description ul {
+            margin: 5px 0;
+            padding-left: 20px;
+        }
+        .description li {
+            margin-bottom: 5px;
+        }
+        .skills-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .skill-category {
+            margin-bottom: 15px;
+        }
+        .skill-category h4 {
+            font-size: 1.1em;
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
+        .skill-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .skill-tag {
+            background-color: #ecf0f1;
+            color: #2c3e50;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.9em;
+            font-weight: 500;
+        }
+        .projects-grid {
+            display: grid;
+            gap: 15px;
+        }
+        .project-item {
+            border-left: 3px solid #3498db;
+            padding-left: 15px;
+        }
+        .project-name {
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .project-description {
+            color: #555;
+            margin: 5px 0;
+        }
+        .project-tech {
+            font-size: 0.9em;
+            color: #7f8c8d;
+        }
+        .project-link {
+            color: #3498db;
+            text-decoration: none;
+            font-size: 0.9em;
+        }
+        @media print {
+            body {
+                padding: 0;
+                font-size: 12px;
+            }
+            .name {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="name">{{personalInfo.name}}</div>
+        <div class="contact-info">
+            {{personalInfo.email}} | {{personalInfo.phone}} | {{personalInfo.location}}
+            {{#if personalInfo.linkedin}}<br><a href="https://{{personalInfo.linkedin}}" target="_blank">{{personalInfo.linkedin}}</a>{{/if}}
+            {{#if personalInfo.github}}<br><a href="https://{{personalInfo.github}}" target="_blank">{{personalInfo.github}}</a>{{/if}}
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">Professional Summary</div>
+        <div class="summary">{{summary}}</div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">Professional Experience</div>
+        {{#each experience}}
+        <div class="experience-item">
+            <div class="job-title">{{title}}</div>
+            {{#each companies}}
+            <div class="company">{{this}} {{../startYear}} - {{../endYear}}</div>
+            {{/each}}
+            <div class="description">
+                <ul>
+                    {{#each bullets}}
+                    <li>{{this}}</li>
+                    {{/each}}
+                </ul>
+            </div>
+        </div>
+        {{/each}}
+    </div>
+
+    <div class="section">
+        <div class="section-title">Education</div>
+        {{#each education}}
+        <div class="education-item">
+            <div class="job-title">{{degree}}</div>
+            <div class="company">{{institution}}</div>
+            <div class="date-location">{{graduationDate}} | {{location}}{{#if gpa}} | GPA: {{gpa}}{{/if}}</div>
+        </div>
+        {{/each}}
+    </div>
+
+    <div class="section">
+        <div class="section-title">Skills</div>
+        <div class="skills-grid">
+            <div class="skill-category">
+                <h4>Technical Skills</h4>
+                <div class="skill-list">
+                    {{#each skills.technical}}
+                    <span class="skill-tag">{{this}}</span>
+                    {{/each}}
+                </div>
+            </div>
+            <div class="skill-category">
+                <h4>Soft Skills</h4>
+                <div class="skill-list">
+                    {{#each skills.soft}}
+                    <span class="skill-tag">{{this}}</span>
+                    {{/each}}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{#if projects}}
+    <div class="section">
+        <div class="section-title">Projects</div>
+        <div class="projects-grid">
+            {{#each projects}}
+            <div class="project-item">
+                <div class="project-name">{{name}}</div>
+                <div class="project-description">{{description}}</div>
+                <div class="project-tech">Technologies: {{join technologies ", "}}</div>
+                {{#if link}}<div><a href="https://{{link}}" target="_blank" class="project-link">{{link}}</a></div>{{/if}}
+            </div>
+            {{/each}}
+        </div>
+    </div>
+    {{/if}}
+</body>
+</html>
