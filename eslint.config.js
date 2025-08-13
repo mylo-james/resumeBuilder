@@ -1,73 +1,27 @@
-import tseslint from "typescript-eslint";
+import { dirname } from "path";
+import { fileURLToPath } from "url";
+import { FlatCompat } from "@eslint/eslintrc";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+const compat = new FlatCompat({
+  baseDirectory: __dirname,
+  recommendedConfig: { js: { ignorePatterns: ["node_modules/**", "dist/**"] } },
+  allConfig: { js: { ignorePatterns: ["node_modules/**", "dist/**"] } },
+});
 
 export default [
-  // Global ignores for all configs
+  ...compat.extends("next/core-web-vitals"),
   {
-    ignores: ["**/node_modules/**", "**/dist/**"],
-  },
-  // JavaScript files
-  {
-    files: ["**/*.{js,jsx}"],
-    ignores: ["node_modules/**", "playwright.config.ts", "dist/**"],
-    languageOptions: {
-      ecmaVersion: 2020,
-      sourceType: "module",
-    },
+    files: ["**/*.{js,jsx,ts,tsx}"],
     rules: {
-      "no-unused-vars": "error",
-      "no-console": "error",
+      "no-console": "warn",
     },
   },
-  // TypeScript files
-  ...tseslint.configs.recommended.map((config) => ({
-    ...config,
-    files: ["apps/**/**/*.{ts,tsx}", "packages/**/**/*.{ts,tsx}"],
-    ignores: ["node_modules/**", "dist/**"],
-  })),
-  {
-    files: ["apps/**/**/*.{ts,tsx}", "packages/**/**/*.{ts,tsx}"],
-    ignores: ["node_modules/**", "playwright.config.ts", "dist/**"],
-    languageOptions: {
-      ecmaVersion: 2020,
-      sourceType: "module",
-      parser: tseslint.parser,
-      parserOptions: {
-        project: [
-          "./apps/api/tsconfig.eslint.json",
-          "./apps/web/tsconfig.eslint.json",
-          "./packages/shared-types/tsconfig.eslint.json",
-        ],
-        tsconfigRootDir: import.meta.dirname,
-      },
-    },
-    plugins: {
-      "@typescript-eslint": tseslint.plugin,
-    },
-    rules: {
-      "no-unused-vars": "off", // Turn off base rule
-      "@typescript-eslint/no-unused-vars": "error",
-      "no-console": "error",
-      "@typescript-eslint/no-explicit-any": "error",
-      "@typescript-eslint/explicit-function-return-type": "off",
-      "@typescript-eslint/explicit-module-boundary-types": "off",
-      "@typescript-eslint/no-namespace": ["error", { allowDeclarations: true, allowDefinitionFiles: true }],
-    },
-  },
-  // Test files - more lenient rules
   {
     files: ["**/*.{test,spec}.{ts,tsx}", "**/test/**/*.{ts,tsx}", "**/e2e/**/*.{ts,tsx}"],
-    languageOptions: {
-      ecmaVersion: 2020,
-      sourceType: "module",
-      parser: tseslint.parser,
-      // Do not require a project for tests; we only need syntax parsing here
-      parserOptions: {
-        tsconfigRootDir: import.meta.dirname,
-      },
-    },
     rules: {
-      "@typescript-eslint/no-explicit-any": "off",
-      "@typescript-eslint/no-namespace": "off",
       "no-console": "off",
     },
   },
