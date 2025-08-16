@@ -1,49 +1,107 @@
 import { render, screen } from '@testing-library/react';
-import '@testing-library/jest-dom';
 import ResumeDisplay from '@/components/ResumeDisplay';
-import { mockResumeData } from '@/lib/mock-data';
 
-// Mock the template service
-jest.mock('@/lib/services/template-service', () => ({
-  templateService: {
-    renderResume: jest.fn()
-  }
-}));
+// Mock data for testing
+const mockResume = {
+  id: '1',
+  title: 'Professional Resume',
+  summary: 'Experienced software engineer with expertise in full-stack development.',
+  experience: [
+    {
+      id: 'exp1',
+      title: 'Senior Software Engineer',
+      companies: ['TechCorp Inc.'],
+      startYear: '2022',
+      endYear: 'Present',
+      bullets: [
+        'Led development of microservices architecture',
+        'Mentored junior developers',
+        'Implemented CI/CD pipelines',
+      ],
+    },
+  ],
+  education: [
+    {
+      id: 'edu1',
+      degree: 'Bachelor of Science in Computer Science',
+      institution: 'University of California, Berkeley',
+      location: 'Berkeley, CA',
+      graduationDate: 'May 2020',
+      gpa: '3.8',
+    },
+  ],
+  skills: {
+    id: 'skills1',
+    technical: ['React', 'Node.js', 'TypeScript'],
+    soft: ['Leadership', 'Communication'],
+  },
+  projects: [
+    {
+      id: 'proj1',
+      name: 'Resume Builder App',
+      description: 'Full-stack application for generating professional resumes',
+      technologies: ['Next.js', 'Express.js', 'Prisma'],
+      link: 'https://github.com/example/resume-builder',
+    },
+  ],
+};
 
 describe('ResumeDisplay', () => {
-  const mockResumeHtml = '<html><body><h1>John Doe</h1></body></html>';
-
-  beforeEach(() => {
-    jest.clearAllMocks();
+  it('renders resume title and summary', () => {
+    render(<ResumeDisplay resume={mockResume} />);
+    
+    expect(screen.getByText('Professional Resume')).toBeInTheDocument();
+    expect(screen.getByText(/Experienced software engineer/)).toBeInTheDocument();
   });
 
-  it('renders resume display with correct title and contact info', () => {
-    render(<ResumeDisplay resumeHtml={mockResumeHtml} data={mockResumeData} />);
+  it('renders experience section', () => {
+    render(<ResumeDisplay resume={mockResume} />);
     
-    expect(screen.getByText('Resume - John Doe')).toBeInTheDocument();
-    expect(screen.getByText('john.doe@email.com | (555) 123-4567')).toBeInTheDocument();
+    expect(screen.getByText('Experience')).toBeInTheDocument();
+    expect(screen.getByText('Senior Software Engineer')).toBeInTheDocument();
+    expect(screen.getByText('TechCorp Inc.')).toBeInTheDocument();
+    expect(screen.getByText('2022 - Present')).toBeInTheDocument();
   });
 
-  it('renders iframe with correct attributes', () => {
-    render(<ResumeDisplay resumeHtml={mockResumeHtml} data={mockResumeData} />);
+  it('renders education section', () => {
+    render(<ResumeDisplay resume={mockResume} />);
     
-    const iframe = screen.getByTitle('Resume Preview');
-    expect(iframe).toBeInTheDocument();
-    expect(iframe).toHaveAttribute('sandbox', 'allow-same-origin');
-    expect(iframe).toHaveClass('w-full', 'h-[800px]', 'border-0');
+    expect(screen.getByText('Education')).toBeInTheDocument();
+    expect(screen.getByText('Bachelor of Science in Computer Science')).toBeInTheDocument();
+    expect(screen.getByText('University of California, Berkeley')).toBeInTheDocument();
   });
 
-  it('displays iframe content when resumeHtml is provided', () => {
-    render(<ResumeDisplay resumeHtml={mockResumeHtml} data={mockResumeData} />);
+  it('renders skills section', () => {
+    render(<ResumeDisplay resume={mockResume} />);
     
-    const iframe = screen.getByTitle('Resume Preview');
-    expect(iframe).toBeInTheDocument();
+    expect(screen.getByText('Skills')).toBeInTheDocument();
+    expect(screen.getByText('Technical Skills')).toBeInTheDocument();
+    expect(screen.getByText('Soft Skills')).toBeInTheDocument();
+    expect(screen.getByText('React')).toBeInTheDocument();
+    expect(screen.getByText('Leadership')).toBeInTheDocument();
   });
 
-  it('handles empty resumeHtml gracefully', () => {
-    render(<ResumeDisplay resumeHtml="" data={mockResumeData} />);
+  it('renders projects section', () => {
+    render(<ResumeDisplay resume={mockResume} />);
     
-    const iframe = screen.getByTitle('Resume Preview');
-    expect(iframe).toBeInTheDocument();
+    expect(screen.getByText('Projects')).toBeInTheDocument();
+    expect(screen.getByText('Resume Builder App')).toBeInTheDocument();
+    expect(screen.getByText(/Full-stack application/)).toBeInTheDocument();
+  });
+
+  it('handles missing optional sections gracefully', () => {
+    const minimalResume = {
+      id: '2',
+      title: 'Minimal Resume',
+      summary: 'Basic resume with minimal data.',
+      experience: [],
+      education: [],
+      projects: [],
+    };
+    
+    render(<ResumeDisplay resume={minimalResume} />);
+    
+    expect(screen.getByText('Minimal Resume')).toBeInTheDocument();
+    expect(screen.getByText(/Basic resume/)).toBeInTheDocument();
   });
 });

@@ -1,7 +1,15 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import userEvent from '@testing-library/user-event';
 import InputForm from '@/components/InputForm';
+
+// Mock the web scraper
+jest.mock('@/lib/services/web-scraper', () => ({
+  __esModule: true,
+  default: {
+    validateJobUrl: jest.fn(),
+    scrapeJobDescription: jest.fn(),
+  },
+}));
 
 describe('InputForm', () => {
   const mockOnGenerate = jest.fn();
@@ -10,75 +18,64 @@ describe('InputForm', () => {
     jest.clearAllMocks();
   });
 
-  it('renders form with all required elements', () => {
-    render(<InputForm onGenerate={mockOnGenerate} />);
+  it('renders form elements', () => {
+    render(<InputForm onGenerate={mockOnGenerate} isLoading={false} />);
     
-    expect(screen.getByText('Job Information')).toBeInTheDocument();
-    expect(screen.getByLabelText('Job Description')).toBeInTheDocument();
-    expect(screen.getByLabelText('Job URL (Optional)')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Generate Resume & Cover Letter' })).toBeInTheDocument();
+    expect(screen.getByLabelText(/job url/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/job description/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /generate resume/i })).toBeInTheDocument();
+  });
+
+  it('handles job description input', () => {
+    render(<InputForm onGenerate={mockOnGenerate} isLoading={false} />);
+    
+    const textarea = screen.getByLabelText(/job description/i);
+    fireEvent.change(textarea, { target: { value: 'Test job description' } });
+    
+    expect(textarea).toHaveValue('Test job description');
+  });
+
+  it('handles job URL input', () => {
+    render(<InputForm onGenerate={mockOnGenerate} isLoading={false} />);
+    
+    const urlInput = screen.getByLabelText(/job url/i);
+    fireEvent.change(urlInput, { target: { value: 'https://example.com/job' } });
+    
+    expect(urlInput).toHaveValue('https://example.com/job');
+  });
+
+  it('calls onGenerate when form is submitted with valid data', () => {
+    render(<InputForm onGenerate={mockOnGenerate} isLoading={false} />);
+    
+    const textarea = screen.getByLabelText(/job description/i);
+    const generateButton = screen.getByRole('button', { name: /generate resume/i });
+    
+    fireEvent.change(textarea, { target: { value: 'Test job description' } });
+    fireEvent.click(generateButton);
+    
+    expect(mockOnGenerate).toHaveBeenCalledWith('Test job description', undefined);
   });
 
   it('disables generate button when job description is empty', () => {
-    render(<InputForm onGenerate={mockOnGenerate} />);
+    render(<InputForm onGenerate={mockOnGenerate} isLoading={false} />);
     
-    const generateButton = screen.getByRole('button', { name: 'Generate Resume & Cover Letter' });
+    const generateButton = screen.getByRole('button', { name: /generate resume/i });
     expect(generateButton).toBeDisabled();
   });
 
-  it('enables generate button when job description is provided', async () => {
-    const user = userEvent.setup();
-    render(<InputForm onGenerate={mockOnGenerate} />);
+  it('disables generate button when loading', () => {
+    render(<InputForm onGenerate={mockOnGenerate} isLoading={true} />);
     
-    const jobDescriptionTextarea = screen.getByLabelText('Job Description');
-    await user.type(jobDescriptionTextarea, 'Software Engineer position');
+    const textarea = screen.getByLabelText(/job description/i);
+    fireEvent.change(textarea, { target: { value: 'Test job description' } });
     
-    const generateButton = screen.getByRole('button', { name: 'Generate Resume & Cover Letter' });
-    expect(generateButton).toBeEnabled();
-  });
-
-  it('calls onGenerate with correct data when form is submitted', async () => {
-    const user = userEvent.setup();
-    render(<InputForm onGenerate={mockOnGenerate} />);
-    
-    const jobDescriptionTextarea = screen.getByLabelText('Job Description');
-    const jobUrlInput = screen.getByLabelText('Job URL (Optional)');
-    const generateButton = screen.getByRole('button', { name: 'Generate Resume & Cover Letter' });
-    
-    await user.type(jobDescriptionTextarea, 'Software Engineer position');
-    await user.type(jobUrlInput, 'https://example.com/job');
-    await user.click(generateButton);
-    
-    expect(mockOnGenerate).toHaveBeenCalledWith('Software Engineer position', 'https://example.com/job');
+    const generateButton = screen.getByRole('button', { name: /generating/i });
+    expect(generateButton).toBeDisabled();
   });
 
   it('shows loading state when isLoading is true', () => {
     render(<InputForm onGenerate={mockOnGenerate} isLoading={true} />);
     
-    const generateButton = screen.getByRole('button', { name: 'Generating...' });
-    expect(generateButton).toBeDisabled();
-  });
-
-  it('handles form submission with only job description', async () => {
-    const user = userEvent.setup();
-    render(<InputForm onGenerate={mockOnGenerate} />);
-    
-    const jobDescriptionTextarea = screen.getByLabelText('Job Description');
-    const generateButton = screen.getByRole('button', { name: 'Generate Resume & Cover Letter' });
-    
-    await user.type(jobDescriptionTextarea, 'Software Engineer position');
-    await user.click(generateButton);
-    
-    expect(mockOnGenerate).toHaveBeenCalledWith('Software Engineer position', '');
-  });
-
-  it('prevents form submission when job description is empty', async () => {
-    const user = userEvent.setup();
-    render(<InputForm onGenerate={mockOnGenerate} />);
-    
-    const generateButton = screen.getByRole('button', { name: 'Generate Resume & Cover Letter' });
-    await user.click(generateButton);
-    
-    expect(mockOnGenerate).not.toHaveBeenCalled();
+    expect(screen.getByText(/generating documents/i)).toBeInTheDocument();
   });
 });
