@@ -3,7 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { PrismaClient } from '@prisma/client';
 import { v4 as uuidv4 } from 'uuid';
-import axios from 'axios';
+import aiAgentService from '../src/lib/services/ai-agent-service.js';
 
 // Load environment variables
 dotenv.config();
@@ -18,7 +18,11 @@ app.use(express.json());
 
 // Health check endpoint
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  res.json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    aiServiceConnected: aiAgentService.getConnectionStatus()
+  });
 });
 
 // User management endpoints
@@ -77,6 +81,15 @@ app.post('/api/job-requests', async (req, res) => {
   try {
     const { userId, jobDescription, jobUrl } = req.body;
     
+    // Get user info for AI generation
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+    
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
     // Create job request
     const jobRequest = await prisma.jobRequest.create({
       data: {
@@ -89,7 +102,7 @@ app.post('/api/job-requests', async (req, res) => {
     });
     
     // Start AI processing in background
-    processJobRequest(jobRequest.id, userId, jobDescription, jobUrl);
+    processJobRequest(jobRequest.id, userId, jobDescription, jobUrl, user);
     
     res.json(jobRequest);
   } catch (error) {
@@ -133,7 +146,7 @@ app.get('/api/job-requests/:id', async (req, res) => {
 });
 
 // AI Agent communication
-async function processJobRequest(jobRequestId, userId, jobDescription, jobUrl) {
+async function processJobRequest(jobRequestId, userId, jobDescription, jobUrl, user) {
   try {
     // Update status to processing
     await prisma.jobRequest.update({
@@ -141,12 +154,30 @@ async function processJobRequest(jobRequestId, userId, jobDescription, jobUrl) {
       data: { status: 'PROCESSING' },
     });
     
-    // Call AI agent (this would be your external AI service)
-    const aiResponse = await callAIAgent(jobDescription, jobUrl);
+    // Call AI agent service
+    const userInfo = {
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      location: user.location,
+      linkedin: user.linkedin,
+      github: user.github,
+      portfolio: user.portfolio,
+    };
+    
+    const aiResponse = await aiAgentService.generateDocuments(
+      jobDescription,
+      jobUrl,
+      userInfo
+    );
+    
+    if (!aiResponse.success) {
+      throw new Error(aiResponse.error || 'AI generation failed');
+    }
     
     // Create resume and cover letter from AI response
-    const resume = await createResumeFromAI(userId, aiResponse.resume);
-    const coverLetter = await createCoverLetterFromAI(userId, aiResponse.coverLetter);
+    const resume = await createResumeFromAI(userId, aiResponse.data.resume);
+    const coverLetter = await createCoverLetterFromAI(userId, aiResponse.data.coverLetter);
     
     // Update job request with generated documents
     await prisma.jobRequest.update({
@@ -171,86 +202,6 @@ async function processJobRequest(jobRequestId, userId, jobDescription, jobUrl) {
         errorMessage: error.message,
       },
     });
-  }
-}
-
-async function callAIAgent(jobDescription, jobUrl) {
-  // This is where you would call your AI agent service
-  // For now, we'll simulate the response with mock data
-  // In production, this would be an HTTP call to your AI service
-  
-  const aiServiceUrl = process.env.AI_SERVICE_URL;
-  
-  if (aiServiceUrl) {
-    try {
-      const response = await axios.post(aiServiceUrl, {
-        jobDescription,
-        jobUrl,
-        tools: ['makeResume', 'makeCoverLetter'],
-      });
-      
-      return response.data;
-    } catch (error) {
-      console.error('Error calling AI service:', error);
-      throw new Error('AI service unavailable');
-    }
-  } else {
-    // Fallback to mock data for development
-    return {
-      resume: {
-        title: 'Professional Resume',
-        summary: 'Experienced software engineer with expertise in full-stack development.',
-        experience: [
-          {
-            title: 'Senior Software Engineer',
-            companies: ['TechCorp Inc.'],
-            startYear: '2022',
-            endYear: 'Present',
-            bullets: [
-              'Led development of microservices architecture',
-              'Mentored junior developers',
-              'Implemented CI/CD pipelines',
-            ],
-          },
-        ],
-        education: [
-          {
-            degree: 'Bachelor of Science in Computer Science',
-            institution: 'University of California, Berkeley',
-            location: 'Berkeley, CA',
-            graduationDate: 'May 2020',
-          },
-        ],
-        skills: {
-          technical: ['React', 'Node.js', 'TypeScript', 'PostgreSQL'],
-          soft: ['Leadership', 'Communication', 'Problem Solving'],
-        },
-        projects: [
-          {
-            name: 'Resume Builder App',
-            description: 'Full-stack application for generating professional resumes',
-            technologies: ['Next.js', 'Express.js', 'Prisma', 'PostgreSQL'],
-          },
-        ],
-      },
-      coverLetter: {
-        title: 'Cover Letter',
-        date: new Date().toLocaleDateString(),
-        recipient: {
-          name: 'Hiring Manager',
-          title: 'Hiring Manager',
-          company: 'Target Company',
-          address: '123 Business St, City, State 12345',
-        },
-        salutation: 'Dear Hiring Manager,',
-        body: [
-          'I am writing to express my interest in the position at your company.',
-          'With my background in software development and passion for creating innovative solutions, I believe I would be a valuable addition to your team.',
-        ],
-        closing: 'Thank you for considering my application.',
-        signature: 'Sincerely,\n[Your Name]',
-      },
-    };
   }
 }
 
@@ -356,6 +307,7 @@ app.use((error, req, res, next) => {
 // Start server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  console.log(`AI Service Connected: ${aiAgentService.getConnectionStatus()}`);
 });
 
 // Graceful shutdown

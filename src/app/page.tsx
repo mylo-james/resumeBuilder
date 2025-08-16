@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { jobRequestService, healthService } from '@/lib/services/api-service';
+import { jobRequestService, healthService, userService } from '@/lib/services/api-service';
 import ResumeDisplay from '@/components/ResumeDisplay';
 import CoverLetterDisplay from '@/components/CoverLetterDisplay';
 import InputForm from '@/components/InputForm';
 import UserRegistration from '@/components/UserRegistration';
+import PDFDownloadButton from '@/components/PDFDownloadButton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, CheckCircle, XCircle } from 'lucide-react';
@@ -20,8 +21,17 @@ interface JobRequest {
   errorMessage?: string;
 }
 
+interface User {
+  id: string;
+  name?: string;
+  email?: string;
+  phone?: string;
+  location?: string;
+}
+
 export default function Home() {
   const [userId, setUserId] = useState<string | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [currentJobRequest, setCurrentJobRequest] = useState<JobRequest | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -31,6 +41,13 @@ export default function Home() {
     // Check backend health on component mount
     checkBackendHealth();
   }, []);
+
+  useEffect(() => {
+    // Load user data when userId changes
+    if (userId) {
+      loadUserData();
+    }
+  }, [userId]);
 
   const checkBackendHealth = async () => {
     try {
@@ -42,11 +59,22 @@ export default function Home() {
     }
   };
 
+  const loadUserData = async () => {
+    if (!userId) return;
+    
+    try {
+      const userData = await userService.getUser(userId);
+      setUser(userData);
+    } catch (error) {
+      console.error('Failed to load user data:', error);
+    }
+  };
+
   const handleUserCreated = (newUserId: string) => {
     setUserId(newUserId);
   };
 
-  const handleGenerate = async (jobDescription: string, jobUrl: string) => {
+  const handleGenerate = async (jobDescription: string, jobUrl?: string) => {
     if (!userId) {
       setError('Please register first');
       return;
@@ -60,7 +88,7 @@ export default function Home() {
       const jobRequest = await jobRequestService.createJobRequest({
         userId,
         jobDescription,
-        jobUrl,
+        jobUrl: jobUrl || '',
       });
       
       setCurrentJobRequest(jobRequest);
@@ -174,6 +202,18 @@ export default function Home() {
               </CardHeader>
               <CardContent>
                 <InputForm onGenerate={handleGenerate} isLoading={isLoading} />
+                
+                {/* PDF Download Button */}
+                {currentJobRequest?.status === 'COMPLETED' && currentJobRequest.resume && currentJobRequest.coverLetter && (
+                  <div className="mt-6">
+                    <PDFDownloadButton
+                      resume={currentJobRequest.resume}
+                      coverLetter={currentJobRequest.coverLetter}
+                      userInfo={user || undefined}
+                      disabled={isLoading}
+                    />
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
