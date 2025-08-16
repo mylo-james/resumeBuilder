@@ -1,145 +1,217 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ResumeData, CoverLetterData } from '@/lib/mock-data';
-import { clientTemplateService } from '@/lib/services/client-template-service';
+import { jobRequestService, healthService } from '@/lib/services/api-service';
 import ResumeDisplay from '@/components/ResumeDisplay';
 import CoverLetterDisplay from '@/components/CoverLetterDisplay';
 import InputForm from '@/components/InputForm';
+import UserRegistration from '@/components/UserRegistration';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Loader2, CheckCircle, XCircle } from 'lucide-react';
+
+interface JobRequest {
+  id: string;
+  status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
+  jobDescription: string;
+  jobUrl?: string;
+  resume?: any;
+  coverLetter?: any;
+  errorMessage?: string;
+}
 
 export default function Home() {
-  const [resumeHtml, setResumeHtml] = useState<string>('');
-  const [coverLetterHtml, setCoverLetterHtml] = useState<string>('');
-  const [resumeData, setResumeData] = useState<ResumeData | null>(null);
-  const [coverLetterData, setCoverLetterData] = useState<CoverLetterData | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [currentJobRequest, setCurrentJobRequest] = useState<JobRequest | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [backendHealth, setBackendHealth] = useState<'loading' | 'healthy' | 'unhealthy'>('loading');
 
   useEffect(() => {
-    // Load initial data from API
-    const loadInitialData = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-        
-        const response = await fetch('/api/generate', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            jobDescription: '',
-            jobUrl: '',
-          }),
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        setResumeData(data.resume);
-        setCoverLetterData(data.coverLetter);
-
-        const [resume, coverLetter] = await Promise.all([
-          clientTemplateService.renderResume(data.resume),
-          clientTemplateService.renderCoverLetter(data.coverLetter)
-        ]);
-        setResumeHtml(resume);
-        setCoverLetterHtml(coverLetter);
-      } catch (error) {
-        console.error('Failed to load initial data:', error);
-        setError('Failed to load initial data. Please try again.');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadInitialData();
+    // Check backend health on component mount
+    checkBackendHealth();
   }, []);
 
+  const checkBackendHealth = async () => {
+    try {
+      await healthService.checkHealth();
+      setBackendHealth('healthy');
+    } catch (error) {
+      console.error('Backend health check failed:', error);
+      setBackendHealth('unhealthy');
+    }
+  };
+
+  const handleUserCreated = (newUserId: string) => {
+    setUserId(newUserId);
+  };
+
   const handleGenerate = async (jobDescription: string, jobUrl: string) => {
+    if (!userId) {
+      setError('Please register first');
+      return;
+    }
+
     try {
       setIsLoading(true);
       setError(null);
       
-      const response = await fetch('/api/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          jobDescription,
-          jobUrl,
-        }),
+      // Create job request
+      const jobRequest = await jobRequestService.createJobRequest({
+        userId,
+        jobDescription,
+        jobUrl,
       });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      setResumeData(data.resume);
-      setCoverLetterData(data.coverLetter);
-
-      const [resume, coverLetter] = await Promise.all([
-        clientTemplateService.renderResume(data.resume),
-        clientTemplateService.renderCoverLetter(data.coverLetter)
-      ]);
-      setResumeHtml(resume);
-      setCoverLetterHtml(coverLetter);
+      
+      setCurrentJobRequest(jobRequest);
+      
+      // Start polling for updates
+      await jobRequestService.pollJobRequest(jobRequest.id, (updatedRequest) => {
+        setCurrentJobRequest(updatedRequest);
+        
+        if (updatedRequest.status === 'COMPLETED') {
+          setIsLoading(false);
+        } else if (updatedRequest.status === 'FAILED') {
+          setIsLoading(false);
+          setError(updatedRequest.errorMessage || 'Failed to generate documents');
+        }
+      });
+      
     } catch (error) {
       console.error('Failed to generate documents:', error);
       setError('Failed to generate documents. Please try again.');
-    } finally {
       setIsLoading(false);
     }
   };
 
+  if (backendHealth === 'loading') {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p>Checking backend connection...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (backendHealth === 'unhealthy') {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <XCircle className="h-5 w-5 text-red-500" />
+              Backend Unavailable
+            </CardTitle>
+            <CardDescription>
+              Unable to connect to the backend server. Please ensure the server is running.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-gray-600 mb-4">
+              Make sure to start the backend server with:
+            </p>
+            <code className="block bg-gray-100 p-2 rounded text-sm">
+              npm run dev:server
+            </code>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!userId) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <UserRegistration onUserCreated={handleUserCreated} />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
-            AI Resume Builder
-          </h1>
-          <p className="text-lg text-gray-600">
-            Generate personalized resumes and cover letters with AI
-          </p>
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Resume Builder</h1>
+          <p className="text-gray-600">Generate professional resumes and cover letters with AI</p>
         </div>
 
-        {/* Main Content */}
+        {error && (
+          <Alert className="mb-6">
+            <XCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        {currentJobRequest && currentJobRequest.status === 'PROCESSING' && (
+          <Alert className="mb-6">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <AlertDescription>
+              AI is generating your documents... This may take a few moments.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {currentJobRequest && currentJobRequest.status === 'COMPLETED' && (
+          <Alert className="mb-6">
+            <CheckCircle className="h-4 w-4 text-green-500" />
+            <AlertDescription>
+              Documents generated successfully!
+            </AlertDescription>
+          </Alert>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Input Form */}
           <div className="lg:col-span-1">
-            <InputForm onGenerate={handleGenerate} isLoading={isLoading} />
+            <Card>
+              <CardHeader>
+                <CardTitle>Job Information</CardTitle>
+                <CardDescription>
+                  Provide the job description and URL to generate tailored documents
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <InputForm onGenerate={handleGenerate} isLoading={isLoading} />
+              </CardContent>
+            </Card>
           </div>
 
-          {/* Document Previews */}
-          <div className="lg:col-span-2 space-y-8">
-            {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                <div className="text-red-800">{error}</div>
-              </div>
+          {/* Document Display */}
+          <div className="lg:col-span-2 space-y-6">
+            {currentJobRequest?.resume && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Generated Resume</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResumeDisplay resume={currentJobRequest.resume} />
+                </CardContent>
+              </Card>
             )}
-            
-            {isLoading ? (
-              <div className="flex items-center justify-center h-64">
-                <div className="text-lg text-gray-600">Loading documents...</div>
-              </div>
-            ) : resumeData && coverLetterData ? (
-              <>
-                <ResumeDisplay resumeHtml={resumeHtml} data={resumeData} />
-                <CoverLetterDisplay coverLetterHtml={coverLetterHtml} data={coverLetterData} />
-              </>
-            ) : null}
-          </div>
-        </div>
 
-        {/* Footer */}
-        <div className="mt-12 text-center text-sm text-gray-500">
-          <p>This is a demo using static data from the backend API. AI integration coming soon!</p>
+            {currentJobRequest?.coverLetter && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Generated Cover Letter</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CoverLetterDisplay coverLetter={currentJobRequest.coverLetter} />
+                </CardContent>
+              </Card>
+            )}
+
+            {!currentJobRequest && (
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="text-center text-gray-500">
+                    <p>Enter job information to generate your documents</p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </div>
       </div>
     </div>

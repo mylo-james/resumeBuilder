@@ -1,0 +1,195 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Personal information
+  phone     String?
+  location  String?
+  linkedin  String?
+  github    String?
+  portfolio String?
+
+  // Relationships
+  resumes      Resume[]
+  coverLetters CoverLetter[]
+  jobRequests  JobRequest[]
+
+  @@map("users")
+}
+
+model Resume {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  summary   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Experience
+  experience Experience[]
+
+  // Education
+  education Education[]
+
+  // Skills
+  skills Skills?
+
+  // Projects
+  projects Project[]
+
+  // Relationships
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobRequests JobRequest[]
+
+  @@map("resumes")
+}
+
+model Experience {
+  id         String @id @default(cuid())
+  resumeId   String
+  title      String
+  companies  String[] // Array of company names
+  startYear  String
+  endYear    String
+  bullets    String[] // Array of bullet points
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relationships
+  resume Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+
+  @@map("experiences")
+}
+
+model Education {
+  id             String @id @default(cuid())
+  resumeId       String
+  degree         String
+  institution    String
+  location       String
+  graduationDate String
+  gpa            String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relationships
+  resume Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+
+  @@map("education")
+}
+
+model Skills {
+  id       String @id @default(cuid())
+  resumeId String @unique
+  technical String[] // Array of technical skills
+  soft     String[] // Array of soft skills
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relationships
+  resume Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+
+  @@map("skills")
+}
+
+model Project {
+  id           String   @id @default(cuid())
+  resumeId     String
+  name         String
+  description  String
+  technologies String[] // Array of technologies used
+  link         String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relationships
+  resume Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+
+  @@map("projects")
+}
+
+model CoverLetter {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Content
+  date      String
+  recipient Recipient?
+  salutation String
+  body      String[] // Array of paragraphs
+  closing   String
+  signature String
+
+  // Relationships
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobRequests JobRequest[]
+
+  @@map("cover_letters")
+}
+
+model Recipient {
+  id           String      @id @default(cuid())
+  coverLetterId String     @unique
+  name         String
+  title        String
+  company      String
+  address      String
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  // Relationships
+  coverLetter CoverLetter @relation(fields: [coverLetterId], references: [id], onDelete: Cascade)
+
+  @@map("recipients")
+}
+
+model JobRequest {
+  id             String   @id @default(cuid())
+  userId         String
+  jobDescription String
+  jobUrl         String?
+  status         JobStatus @default(PENDING)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Generated documents
+  resumeId       String?
+  coverLetterId  String?
+
+  // AI generation metadata
+  aiRequestId    String?
+  aiResponse     Json?    // Store AI response for debugging
+  errorMessage   String?
+
+  // Relationships
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resume      Resume?     @relation(fields: [resumeId], references: [id])
+  coverLetter CoverLetter? @relation(fields: [coverLetterId], references: [id])
+
+  @@map("job_requests")
+}
+
+enum JobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
